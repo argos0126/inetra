@@ -1,0 +1,100 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#059669', 'primaryTextColor': '#fff', 'lineColor': '#10B981'}}}%%
+
+stateDiagram-v2
+    direction LR
+    
+    [*] --> Created: New Shipment
+    
+    state Created {
+        [*] --> DataEntry
+        DataEntry --> Validated: Validation passed
+        DataEntry --> Error: Validation failed
+        Error --> DataEntry: Fix errors
+    }
+    
+    Created --> Confirmed: Confirm Shipment
+    note right of Created
+        Required Fields:
+        - Shipment code
+        - Customer
+        - Pickup location
+        - Drop location
+    end note
+    
+    Confirmed --> Mapped: Map to Trip
+    note right of Confirmed
+        Ready for trip assignment
+    end note
+    
+    state Mapped {
+        [*] --> AwaitingTrip
+        AwaitingTrip --> TripStarted: Trip begins
+    }
+    note right of Mapped
+        Linked to Trip ID
+        Sequence order assigned
+    end note
+    
+    Mapped --> InPickup: Vehicle at Pickup
+    
+    state InPickup {
+        [*] --> LoadingStarted
+        LoadingStarted --> LoadingCompleted: Goods loaded
+    }
+    
+    InPickup --> InTransit: Depart Pickup
+    
+    state InTransit {
+        [*] --> Moving
+        Moving --> Delayed: Behind schedule
+        Delayed --> Moving: Back on track
+        Moving --> Stopped: Unplanned stop
+        Stopped --> Moving: Resume
+    }
+    
+    InTransit --> OutForDelivery: Near Destination
+    
+    state OutForDelivery {
+        [*] --> Approaching
+        Approaching --> AtDoor: Arrived
+    }
+    
+    OutForDelivery --> Delivered: Delivery Confirmed
+    OutForDelivery --> NDR: Delivery Failed
+    
+    state NDR {
+        [*] --> Investigating
+        Investigating --> Rescheduled: Retry scheduled
+        Investigating --> ReturnInitiated: Return decided
+    }
+    note right of NDR
+        NDR Reasons:
+        - Customer unavailable
+        - Wrong address
+        - Refused delivery
+        - Incomplete payment
+    end note
+    
+    NDR --> OutForDelivery: Retry Delivery
+    NDR --> Returned: Return Complete
+    
+    Delivered --> Success: POD Collected
+    
+    state Success {
+        [*] --> Billed
+        Billed --> Paid: Payment received
+    }
+    note right of Success
+        Final successful state
+        Ready for billing
+    end note
+    
+    Returned --> [*]
+    Success --> [*]
+    
+    %% Exception handling (parallel)
+    state "Exception Handling" as EH {
+        ExceptionDetected: Exception Detected
+        Acknowledged: Acknowledged
+        Resolved: Resolved
+    }

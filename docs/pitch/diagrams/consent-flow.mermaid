@@ -1,0 +1,105 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#7C3AED', 'primaryTextColor': '#fff', 'lineColor': '#8B5CF6'}}}%%
+
+sequenceDiagram
+    autonumber
+    
+    participant U as User (Dispatcher)
+    participant UI as Trip Creation UI
+    participant DB as Database
+    participant EF as Edge Function
+    participant TL as Telenity API
+    participant D as Driver (SMS)
+    
+    Note over U,D: Step 1: Trip Creation - Vehicle Check
+    
+    U->>UI: Select Vehicle
+    UI->>DB: Query vehicle.tracking_asset_id
+    
+    alt Vehicle has GPS Tracking
+        DB-->>UI: tracking_asset_id exists
+        UI->>UI: Use GPS tracking mode
+        Note right of UI: No consent needed<br/>Proceed with trip
+    else Vehicle without GPS
+        DB-->>UI: tracking_asset_id is null
+        UI->>UI: Switch to SIM tracking mode
+        Note right of UI: Driver consent required
+    end
+    
+    Note over U,D: Step 2: Driver Selection & Consent Check
+    
+    U->>UI: Select Driver
+    UI->>DB: Query driver_consents WHERE driver_id = ?
+    
+    alt Existing Valid Consent
+        DB-->>UI: consent_status = 'allowed', not expired
+        UI->>UI: Display "Consent Valid ✓"
+        Note right of UI: Reuse existing consent
+    else No Consent or Expired
+        DB-->>UI: No valid consent found
+        UI->>UI: Display "Consent Required"
+        UI->>UI: Show "Request Consent" button
+    end
+    
+    Note over U,D: Step 3: Request New Consent
+    
+    U->>UI: Click "Request Consent"
+    UI->>EF: POST /telenity-tracking/import
+    
+    rect rgb(237, 233, 254)
+        EF->>EF: Get authentication token
+        EF->>TL: POST /import<br/>{msisdn, entityId, expiresAt}
+        TL-->>EF: {success: true, entityId}
+        TL->>D: SMS: "Please reply YES to allow tracking"
+    end
+    
+    EF->>DB: INSERT driver_consents<br/>(status: 'pending')
+    EF-->>UI: Consent request sent
+    UI->>UI: Display "Awaiting Consent..."
+    
+    Note over U,D: Step 4: Driver Responds
+    
+    D->>TL: SMS Reply: "YES"
+    TL->>TL: Update consent status
+    
+    Note over U,D: Step 5: Poll for Consent Status
+    
+    loop Every 10 seconds (max 5 minutes)
+        UI->>EF: GET /telenity-tracking/check-consent
+        EF->>TL: GET /consent-check/{entityId}
+        
+        alt Consent Granted
+            TL-->>EF: {status: "ALLOWED"}
+            EF->>DB: UPDATE driver_consents<br/>(status: 'allowed', received_at)
+            EF-->>UI: Consent granted
+            UI->>UI: Display "Consent Received ✓"
+            Note right of UI: Enable trip creation
+        else Still Pending
+            TL-->>EF: {status: "PENDING"}
+            EF-->>UI: Still waiting
+            UI->>UI: Continue polling
+        else Denied
+            TL-->>EF: {status: "DENIED"}
+            EF->>DB: UPDATE driver_consents<br/>(status: 'denied')
+            EF-->>UI: Consent denied
+            UI->>UI: Display "Consent Denied ✗"
+            Note right of UI: Cannot use SIM tracking
+        end
+    end
+    
+    Note over U,D: Step 6: Create Trip with Consent
+    
+    U->>UI: Create Trip
+    UI->>DB: INSERT trip<br/>(sim_consent_id, tracking_type: 'sim')
+    DB-->>UI: Trip created
+    UI->>U: "Trip created with SIM tracking"
+    
+    Note over U,D: Consent Expiry Handling
+    
+    rect rgb(254, 226, 226)
+        Note right of DB: Consent expires after trip<br/>or after configured duration
+        DB->>DB: consent_expires_at check
+        alt Expired
+            DB->>DB: status = 'expired'
+            Note right of DB: New consent needed<br/>for future trips
+        end
+    end

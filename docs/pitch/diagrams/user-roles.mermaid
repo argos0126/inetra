@@ -1,0 +1,136 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#6366F1', 'primaryTextColor': '#fff', 'lineColor': '#818CF8'}}}%%
+
+flowchart TB
+    subgraph RoleHierarchy["Role Hierarchy"]
+        direction TB
+        
+        SA["👑 SuperAdmin<br/>Full system access"]
+        
+        subgraph AdminLevel["Admin Level"]
+            ADMIN["🔧 Admin<br/>Organization management"]
+        end
+        
+        subgraph OperationalRoles["Operational Roles"]
+            OPS["📊 Operations<br/>Day-to-day management"]
+            DISP["🚚 Dispatcher<br/>Trip assignment"]
+            DC["👥 Driver Coordinator<br/>Driver management"]
+            RP["🗺️ Route Planner<br/>Lane optimization"]
+            FM["🚗 Fleet Manager<br/>Vehicle management"]
+            CT["📡 Control Tower<br/>Real-time monitoring"]
+            DE["📝 Data Entry<br/>Master data"]
+            BILL["💰 Billing<br/>Financial operations"]
+            SUP["🆘 Support<br/>Issue resolution"]
+        end
+        
+        subgraph ExternalRoles["External Access"]
+            SHIP_ADMIN["🏢 Shipper Admin<br/>Customer admin"]
+            SHIP_USER["👤 Shipper User<br/>Customer view"]
+            TRANS["🚛 Transporter<br/>Vendor access"]
+        end
+        
+        subgraph ReadOnly["Read-Only"]
+            VIEW["👁️ Viewer<br/>Dashboard only"]
+        end
+    end
+    
+    SA --> ADMIN
+    ADMIN --> OPS
+    ADMIN --> DISP
+    ADMIN --> DC
+    ADMIN --> RP
+    ADMIN --> FM
+    ADMIN --> CT
+    ADMIN --> DE
+    ADMIN --> BILL
+    ADMIN --> SUP
+    
+    SA --> SHIP_ADMIN
+    SHIP_ADMIN --> SHIP_USER
+    
+    SA --> TRANS
+    SA --> VIEW
+    
+    subgraph Permissions["Permission Matrix"]
+        direction LR
+        
+        subgraph Resources["Resources"]
+            R_TRIP["Trips"]
+            R_SHIP["Shipments"]
+            R_CUST["Customers"]
+            R_DRV["Drivers"]
+            R_VEH["Vehicles"]
+            R_LOC["Locations"]
+            R_USER["Users"]
+            R_ROLE["Roles"]
+            R_SET["Settings"]
+        end
+        
+        subgraph Actions["Actions"]
+            A_VIEW["View"]
+            A_CREATE["Create"]
+            A_EDIT["Edit"]
+            A_DELETE["Delete"]
+        end
+    end
+    
+    subgraph PermissionLevels["Access Levels by Role"]
+        direction TB
+        
+        P_SA["SuperAdmin: ALL resources, ALL actions"]
+        P_ADMIN["Admin: Most resources, CRUD except delete users"]
+        P_OPS["Operations: Trips, Shipments - Full CRUD"]
+        P_DISP["Dispatcher: Trips - Create, Edit, View"]
+        P_DC["Driver Coord: Drivers - Full CRUD"]
+        P_FM["Fleet Mgr: Vehicles - Full CRUD"]
+        P_CT["Control Tower: Trips, Alerts - View, Acknowledge"]
+        P_DE["Data Entry: Master data - Create, Edit"]
+        P_BILL["Billing: Shipments - View, Edit status"]
+        P_SUP["Support: Exceptions - View, Resolve"]
+        P_VIEW["Viewer: All - View only"]
+    end
+    
+    %% Dashboard mapping
+    subgraph Dashboards["Dashboard Assignment"]
+        D_SA["Admin Dashboard"]
+        D_OPS["Operations Dashboard"]
+        D_DISP["Dispatcher Dashboard"]
+        D_DC["Driver Coordinator Dashboard"]
+        D_RP["Route Planner Dashboard"]
+        D_FM["Fleet Dashboard"]
+        D_CT["Control Tower Dashboard"]
+        D_DE["Data Entry Dashboard"]
+        D_BILL["Billing Dashboard"]
+        D_SUP["Support Dashboard"]
+        D_TRANS["Transporter Dashboard"]
+        D_SHIP["Shipper Dashboard"]
+        D_VIEW["Viewer Dashboard"]
+    end
+    
+    SA --> D_SA
+    ADMIN --> D_SA
+    OPS --> D_OPS
+    DISP --> D_DISP
+    DC --> D_DC
+    RP --> D_RP
+    FM --> D_FM
+    CT --> D_CT
+    DE --> D_DE
+    BILL --> D_BILL
+    SUP --> D_SUP
+    TRANS --> D_TRANS
+    SHIP_ADMIN --> D_SHIP
+    SHIP_USER --> D_SHIP
+    VIEW --> D_VIEW
+    
+    %% Styling
+    classDef superadmin fill:#7C3AED,stroke:#6D28D9,color:#fff
+    classDef admin fill:#4F46E5,stroke:#4338CA,color:#fff
+    classDef operational fill:#059669,stroke:#047857,color:#fff
+    classDef external fill:#0EA5E9,stroke:#0284C7,color:#fff
+    classDef readonly fill:#6B7280,stroke:#4B5563,color:#fff
+    
+    class SA superadmin
+    class ADMIN admin
+    class OPS,DISP,DC,RP,FM,CT,DE,BILL,SUP operational
+    class SHIP_ADMIN,SHIP_USER,TRANS external
+    class VIEW readonly

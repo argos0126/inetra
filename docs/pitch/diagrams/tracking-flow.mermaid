@@ -1,0 +1,87 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#DC2626', 'primaryTextColor': '#fff', 'lineColor': '#EF4444'}}}%%
+
+sequenceDiagram
+    autonumber
+    
+    participant V as Vehicle/Driver
+    participant GPS as WheelsEye GPS API
+    participant SIM as Telenity SIM API
+    participant EF as Edge Functions
+    participant DB as PostgreSQL Database
+    participant RT as Realtime Engine
+    participant UI as Dashboard UI
+    participant AL as Alert System
+    
+    Note over V,UI: GPS Tracking Flow
+    
+    rect rgb(220, 252, 231)
+        V->>GPS: GPS device transmits location
+        GPS->>EF: Location data (lat, lng, speed, heading)
+        EF->>EF: Validate & transform data
+        EF->>DB: INSERT into location_history
+        EF->>DB: UPDATE trip.last_ping_at
+    end
+    
+    Note over V,UI: SIM Tracking Flow (Fallback)
+    
+    rect rgb(254, 243, 199)
+        V->>SIM: Cell tower registration
+        SIM->>EF: Cell-based location (lat, lng, accuracy)
+        EF->>EF: Validate consent status
+        EF->>DB: INSERT into location_history
+        EF->>DB: UPDATE trip.last_ping_at
+    end
+    
+    Note over V,UI: Real-time Updates
+    
+    rect rgb(219, 234, 254)
+        DB->>RT: Trigger on location_history INSERT
+        RT->>UI: WebSocket push notification
+        UI->>UI: Update map marker position
+        UI->>UI: Recalculate ETA
+    end
+    
+    Note over V,UI: Alert Detection
+    
+    rect rgb(254, 226, 226)
+        EF->>AL: Check alert conditions
+        
+        alt Route Deviation
+            AL->>DB: INSERT trip_alerts (ROUTE_DEVIATION)
+            AL->>UI: Push alert notification
+        end
+        
+        alt Speed Violation
+            AL->>DB: INSERT trip_alerts (SPEED_VIOLATION)
+            AL->>UI: Push alert notification
+        end
+        
+        alt Geofence Event
+            EF->>EF: Calculate distance to waypoint
+            alt Inside Geofence
+                AL->>DB: UPDATE waypoint arrival time
+                AL->>UI: Push geofence entry notification
+            end
+        end
+        
+        alt Long Stoppage
+            EF->>EF: Check time since last movement
+            AL->>DB: INSERT trip_alerts (LONG_STOPPAGE)
+            AL->>UI: Push alert notification
+        end
+    end
+    
+    Note over V,UI: Tracking Log Storage
+    
+    rect rgb(243, 244, 246)
+        EF->>DB: UPSERT tracking_logs (trip_id)
+        Note right of DB: Stores complete path<br/>Raw API responses<br/>Sequence numbers
+    end
+    
+    Note over V,UI: Manual Location Update (Fallback)
+    
+    rect rgb(237, 233, 254)
+        UI->>EF: Manual location input
+        EF->>DB: INSERT location_history (source: 'manual')
+        EF->>DB: UPDATE trip status
+    end

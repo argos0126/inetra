@@ -1,0 +1,159 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#EC4899', 'primaryTextColor': '#fff', 'lineColor': '#F472B6'}}}%%
+
+flowchart TB
+    subgraph Application["Logistics TMS Application"]
+        FE["Frontend<br/>(React)"]
+        EF["Edge Functions<br/>(Deno)"]
+        DB[("PostgreSQL<br/>Database")]
+        TOKENS[("Token Store<br/>integration_tokens")]
+        SETTINGS[("Settings<br/>tracking_settings")]
+    end
+    
+    subgraph WheelsEyeIntegration["WheelsEye GPS Integration"]
+        direction TB
+        WE_EF["wheelseye-tracking<br/>Edge Function"]
+        
+        subgraph WE_API["WheelsEye API"]
+            WE_AUTH["Authentication"]
+            WE_LOC["Vehicle Location"]
+            WE_HIST["Location History"]
+        end
+        
+        subgraph WE_Data["Data Retrieved"]
+            WE_D1["Latitude/Longitude"]
+            WE_D2["Speed (km/h)"]
+            WE_D3["Heading"]
+            WE_D4["Timestamp"]
+            WE_D5["Accuracy"]
+        end
+    end
+    
+    subgraph TelenityIntegration["Telenity SIM Integration"]
+        direction TB
+        TL_EF["telenity-tracking<br/>Edge Function"]
+        TL_TOKEN["telenity-token-refresh<br/>Edge Function"]
+        
+        subgraph TL_API["Telenity API"]
+            TL_AUTH["Smarttrail Auth<br/>(6hr token)"]
+            TL_CONSENT["Consent Auth<br/>(30min token)"]
+            TL_IMPORT["Import API"]
+            TL_CHECK["Consent Check API"]
+            TL_LOC["Location API"]
+        end
+        
+        subgraph TL_Data["Data Retrieved"]
+            TL_D1["Cell Location"]
+            TL_D2["Consent Status"]
+            TL_D3["Entity ID"]
+        end
+    end
+    
+    subgraph GoogleMapsIntegration["Google Maps Integration"]
+        direction TB
+        GM_EF["google-maps-*<br/>Edge Functions"]
+        
+        subgraph GM_API["Google Maps APIs"]
+            GM_DIR["Directions API"]
+            GM_DIST["Distance Matrix"]
+            GM_PLACES["Places API"]
+            GM_GEO["Geocoding API"]
+            GM_STATIC["Static Maps"]
+            GM_SNAP["Snap to Roads"]
+        end
+        
+        subgraph GM_Data["Data Retrieved"]
+            GM_D1["Route Polyline"]
+            GM_D2["Distance (meters)"]
+            GM_D3["Duration (seconds)"]
+            GM_D4["Place Details"]
+            GM_D5["Coordinates"]
+        end
+    end
+    
+    subgraph ResendIntegration["Resend Email Integration"]
+        direction TB
+        RS_EF["Email Functions"]
+        
+        subgraph RS_API["Resend API"]
+            RS_SEND["Send Email"]
+            RS_TEMPLATE["Templates"]
+        end
+        
+        subgraph RS_Data["Email Types"]
+            RS_D1["Alert Notifications"]
+            RS_D2["Trip Updates"]
+            RS_D3["Password Reset"]
+        end
+    end
+    
+    subgraph TokenManagement["Token Management"]
+        direction LR
+        
+        CRON_AUTH["Cron: Every 5 hours<br/>Refresh Auth Token"]
+        CRON_ACCESS["Cron: Every 25 min<br/>Refresh Access Token"]
+        
+        subgraph TokenTypes["Token Types"]
+            T_AUTH["Authentication Token<br/>(Telenity Smarttrail)"]
+            T_ACCESS["Access Token<br/>(Telenity Consent)"]
+            T_WE["API Key<br/>(WheelsEye)"]
+            T_GM["API Key<br/>(Google Maps)"]
+            T_RS["API Key<br/>(Resend)"]
+        end
+    end
+    
+    subgraph RateLimiting["Rate Limiting & Monitoring"]
+        RL_GM["Google Maps<br/>X requests/min"]
+        RL_RS["Resend<br/>Y emails/day"]
+        RL_TL["Telenity<br/>Token refresh"]
+        RL_WE["WheelsEye<br/>Per-vehicle limits"]
+    end
+    
+    %% Connections
+    FE --> EF
+    EF --> DB
+    EF --> TOKENS
+    EF --> SETTINGS
+    
+    EF --> WE_EF
+    WE_EF --> WE_API
+    WE_API --> WE_Data
+    WE_Data --> DB
+    
+    EF --> TL_EF
+    EF --> TL_TOKEN
+    TL_TOKEN --> TL_AUTH
+    TL_TOKEN --> TL_CONSENT
+    TL_EF --> TL_API
+    TL_API --> TL_Data
+    TL_Data --> DB
+    
+    EF --> GM_EF
+    GM_EF --> GM_API
+    GM_API --> GM_Data
+    GM_Data --> DB
+    
+    EF --> RS_EF
+    RS_EF --> RS_API
+    RS_API --> RS_Data
+    
+    CRON_AUTH --> TL_TOKEN
+    CRON_ACCESS --> TL_TOKEN
+    TL_TOKEN --> TOKENS
+    
+    SETTINGS --> RL_GM
+    SETTINGS --> RL_RS
+    SETTINGS --> RL_TL
+    SETTINGS --> RL_WE
+    
+    %% Styling
+    classDef frontend fill:#4F46E5,stroke:#4338CA,color:#fff
+    classDef edge fill:#059669,stroke:#047857,color:#fff
+    classDef db fill:#F59E0B,stroke:#D97706,color:#000
+    classDef api fill:#EC4899,stroke:#DB2777,color:#fff
+    classDef data fill:#6B7280,stroke:#4B5563,color:#fff
+    
+    class FE frontend
+    class EF,WE_EF,TL_EF,TL_TOKEN,GM_EF,RS_EF edge
+    class DB,TOKENS,SETTINGS db
+    class WE_API,TL_API,GM_API,RS_API api
+    class WE_Data,TL_Data,GM_Data,RS_Data data

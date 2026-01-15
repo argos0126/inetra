@@ -1,0 +1,123 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#F59E0B', 'primaryTextColor': '#000', 'lineColor': '#F97316'}}}%%
+
+flowchart TB
+    subgraph Input["Data Sources"]
+        LOC["Location Updates<br/>(Every 30 seconds)"]
+        ROUTE["Planned Route<br/>(From Lane)"]
+        CONFIG["Alert Thresholds<br/>(From Settings)"]
+        TRIP["Trip Data<br/>(Status, ETAs)"]
+    end
+    
+    subgraph Detection["Alert Detection Engine"]
+        direction TB
+        
+        subgraph RouteAlerts["Route Monitoring"]
+            RD["Route Deviation<br/>Check"]
+            GF["Geofence<br/>Check"]
+        end
+        
+        subgraph SpeedAlerts["Speed Monitoring"]
+            SV["Speed Violation<br/>Check"]
+            FT["Fatigue<br/>Check"]
+        end
+        
+        subgraph TimeAlerts["Time Monitoring"]
+            LS["Long Stoppage<br/>Check"]
+            DL["Delay<br/>Check"]
+            ND["Night Driving<br/>Check"]
+        end
+        
+        subgraph TrackingAlerts["Tracking Monitoring"]
+            NT["No Tracking<br/>Check"]
+            SOS["SOS Signal<br/>Check"]
+        end
+    end
+    
+    subgraph AlertTypes["Alert Classification"]
+        direction LR
+        
+        CRITICAL["🔴 CRITICAL<br/>SOS, No Tracking"]
+        HIGH["🟠 HIGH<br/>Speed, Fatigue, Geofence"]
+        MEDIUM["🟡 MEDIUM<br/>Deviation, Stoppage, Delay"]
+        LOW["🟢 LOW<br/>Night Driving"]
+    end
+    
+    subgraph Processing["Alert Processing"]
+        CREATE["Create Alert Record"]
+        DEDUP["Deduplication<br/>(Prevent spam)"]
+        ENRICH["Enrich with Context<br/>(Location name, etc.)"]
+        STORE["Store in trip_alerts"]
+    end
+    
+    subgraph Notification["Notification Dispatch"]
+        INAPP["📱 In-App<br/>Dashboard notification"]
+        EMAIL["📧 Email<br/>(If configured)"]
+        WEBHOOK["🔗 Webhook<br/>(Future)"]
+        SMS["📲 SMS<br/>(Future)"]
+    end
+    
+    subgraph Lifecycle["Alert Lifecycle"]
+        ACTIVE["Active"]
+        ACK["Acknowledged"]
+        RESOLVED["Resolved"]
+        ESCALATED["Escalated"]
+    end
+    
+    subgraph Actions["User Actions"]
+        VIEW["View Alert Details"]
+        ACKNOWLEDGE["Acknowledge Alert"]
+        RESOLVE["Resolve with Notes"]
+        CONTACT["Contact Driver"]
+    end
+    
+    %% Flow connections
+    LOC --> Detection
+    ROUTE --> Detection
+    CONFIG --> Detection
+    TRIP --> Detection
+    
+    RD --> |"Deviation > 2km"| MEDIUM
+    GF --> |"Unexpected zone"| HIGH
+    SV --> |"Speed > 80km/h"| HIGH
+    FT --> |"Driving > 4hrs"| HIGH
+    LS --> |"Stopped > 30min"| MEDIUM
+    DL --> |"ETA exceeded"| MEDIUM
+    ND --> |"11PM - 5AM"| LOW
+    NT --> |"No ping > 15min"| CRITICAL
+    SOS --> |"SOS pressed"| CRITICAL
+    
+    CRITICAL --> CREATE
+    HIGH --> CREATE
+    MEDIUM --> CREATE
+    LOW --> CREATE
+    
+    CREATE --> DEDUP
+    DEDUP --> ENRICH
+    ENRICH --> STORE
+    
+    STORE --> INAPP
+    STORE --> EMAIL
+    STORE --> WEBHOOK
+    STORE --> SMS
+    
+    STORE --> ACTIVE
+    ACTIVE --> ACK
+    ACK --> RESOLVED
+    ACTIVE --> ESCALATED
+    ESCALATED --> RESOLVED
+    
+    ACTIVE --> VIEW
+    VIEW --> ACKNOWLEDGE
+    ACKNOWLEDGE --> RESOLVE
+    VIEW --> CONTACT
+    
+    %% Styling
+    classDef critical fill:#DC2626,stroke:#B91C1C,color:#fff
+    classDef high fill:#F97316,stroke:#EA580C,color:#fff
+    classDef medium fill:#F59E0B,stroke:#D97706,color:#000
+    classDef low fill:#22C55E,stroke:#16A34A,color:#fff
+    
+    class CRITICAL,NT,SOS critical
+    class HIGH,SV,FT,GF high
+    class MEDIUM,RD,LS,DL medium
+    class LOW,ND low

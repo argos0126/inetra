@@ -1,0 +1,55 @@
+project_id = "ofjgwusjzgjkfwumzwwy"
+
+[functions.telenity-tracking]
+verify_jwt = false
+
+[functions.telenity-token-refresh]
+verify_jwt = false
+
+[functions.wheelseye-tracking]
+verify_jwt = true
+
+[functions.google-maps-route]
+verify_jwt = false
+
+[functions.google-maps-places]
+verify_jwt = false
+
+[functions.google-maps-snap-to-roads]
+verify_jwt = false
+
+[functions.start-trip]
+verify_jwt = false
+
+[functions.bulk-location-update]
+verify_jwt = false
+
+[functions.trip-alerts-monitor]
+verify_jwt = false
+
+[functions.process-location-alerts]
+verify_jwt = false
+
+[functions.admin-create-user]
+verify_jwt = false
+
+[functions.create-entity-user]
+verify_jwt = true
+
+[functions.google-maps-static]
+verify_jwt = false
+
+[functions.create-missing-entity-users]
+verify_jwt = false
+
+[functions.reset-user-password]
+verify_jwt = false
+
+[functions.get-user-email]
+verify_jwt = false
+
+[functions.admin-management]
+verify_jwt = false
+
+[functions.compliance-alerts-monitor]
+verify_jwt = false

@@ -1,0 +1,90 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#4338CA', 'lineColor': '#6366F1', 'secondaryColor': '#F3F4F6', 'tertiaryColor': '#EEF2FF'}}}%%
+
+graph TB
+    subgraph Frontend["Frontend Application"]
+        direction TB
+        UI["React 18 + TypeScript"]
+        Router["React Router v6"]
+        Query["TanStack Query"]
+        Maps["Map Components<br/>(Leaflet + Mapbox)"]
+        Charts["Recharts"]
+        UI --> Router
+        Router --> Query
+        Query --> Maps
+        Query --> Charts
+    end
+
+    subgraph Auth["Authentication Layer"]
+        SupaAuth["Supabase Auth"]
+        JWT["JWT Tokens"]
+        RLS["Row-Level Security"]
+        SupaAuth --> JWT
+        JWT --> RLS
+    end
+
+    subgraph Backend["Supabase Backend"]
+        direction TB
+        DB[("PostgreSQL Database<br/>20+ Tables")]
+        EdgeFn["Edge Functions<br/>(Deno Runtime)"]
+        Realtime["Realtime Subscriptions"]
+        Storage["File Storage<br/>(POD Documents)"]
+        EdgeFn --> DB
+        Realtime --> DB
+        Storage --> DB
+    end
+
+    subgraph EdgeFunctions["Edge Function Services"]
+        AdminFn["Admin Management"]
+        TrackingFn["Tracking Functions"]
+        AlertsFn["Alert Processing"]
+        TokenFn["Token Management"]
+        MapFn["Google Maps Proxy"]
+    end
+
+    subgraph External["External Integrations"]
+        direction TB
+        WheelsEye["WheelsEye API<br/>(GPS Tracking)"]
+        Telenity["Telenity API<br/>(SIM Tracking)"]
+        GoogleMaps["Google Maps API<br/>(Routes + Places)"]
+        Resend["Resend API<br/>(Email)"]
+    end
+
+    subgraph DataFlow["Data Flow"]
+        LocationData["Location History"]
+        AlertData["Trip Alerts"]
+        AuditData["Audit Logs"]
+    end
+
+    %% Connections
+    UI --> SupaAuth
+    UI --> Query
+    Query --> DB
+    Query --> EdgeFn
+    Query --> Realtime
+
+    EdgeFunctions --> EdgeFn
+    AdminFn --> DB
+    TrackingFn --> WheelsEye
+    TrackingFn --> Telenity
+    TrackingFn --> DB
+    AlertsFn --> DB
+    TokenFn --> External
+    MapFn --> GoogleMaps
+
+    WheelsEye --> LocationData
+    Telenity --> LocationData
+    LocationData --> DB
+    AlertsFn --> AlertData
+    AlertData --> DB
+    DB --> AuditData
+
+    %% Styling
+    classDef frontend fill:#4F46E5,stroke:#4338CA,color:#fff
+    classDef backend fill:#059669,stroke:#047857,color:#fff
+    classDef external fill:#DC2626,stroke:#B91C1C,color:#fff
+    classDef data fill:#F59E0B,stroke:#D97706,color:#fff
+
+    class UI,Router,Query,Maps,Charts frontend
+    class DB,EdgeFn,Realtime,Storage backend
+    class WheelsEye,Telenity,GoogleMaps,Resend external
+    class LocationData,AlertData,AuditData data

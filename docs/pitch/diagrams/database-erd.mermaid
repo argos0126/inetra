@@ -1,0 +1,521 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0EA5E9', 'primaryTextColor': '#fff', 'lineColor': '#38BDF8'}}}%%
+
+erDiagram
+    %% Core Entities
+    CUSTOMERS {
+        uuid id PK
+        string display_name
+        string company_name
+        string gst_number
+        string pan_number
+        string email
+        string phone
+        string address
+        string city
+        string state
+        string pincode
+        float latitude
+        float longitude
+        boolean is_active
+        uuid user_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    DRIVERS {
+        uuid id PK
+        string name
+        string mobile
+        string email
+        string license_number
+        date license_expiry_date
+        string aadhaar_number
+        boolean aadhaar_verified
+        string pan_number
+        boolean pan_verified
+        uuid transporter_id FK
+        boolean is_active
+        boolean is_dedicated
+        enum consent_status
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    VEHICLES {
+        uuid id PK
+        string vehicle_number
+        uuid vehicle_type_id FK
+        uuid transporter_id FK
+        uuid tracking_asset_id FK
+        string make
+        string model
+        int year
+        string rc_number
+        date rc_expiry_date
+        string insurance_number
+        date insurance_expiry_date
+        string fitness_number
+        date fitness_expiry_date
+        string permit_number
+        date permit_expiry_date
+        string puc_number
+        date puc_expiry_date
+        boolean is_active
+        boolean is_dedicated
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    TRANSPORTERS {
+        uuid id PK
+        string transporter_name
+        string code
+        string company
+        string gstin
+        string pan
+        string email
+        string mobile
+        string address
+        string city
+        string state
+        string pincode
+        float latitude
+        float longitude
+        boolean is_active
+        uuid user_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    LOCATIONS {
+        uuid id PK
+        string location_name
+        enum location_type
+        uuid customer_id FK
+        string address
+        string city
+        string district
+        string state
+        string pincode
+        string zone
+        float latitude
+        float longitude
+        int gps_radius_meters
+        int sim_radius_meters
+        string integration_id
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    %% Vehicle Types & Materials
+    VEHICLE_TYPES {
+        uuid id PK
+        string type_name
+        float length_cm
+        float breadth_cm
+        float height_cm
+        float weight_capacity_kg
+        float volume_capacity_cbm
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    MATERIALS {
+        uuid id PK
+        string name
+        string sku_code
+        string description
+        float weight_kg
+        float length_cm
+        float breadth_cm
+        float height_cm
+        float volume_cbm
+        string units
+        string packaging
+        boolean is_bulk
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    %% Tracking Assets
+    TRACKING_ASSETS {
+        uuid id PK
+        string display_name
+        enum asset_type
+        string asset_id
+        string api_url
+        string api_token
+        json response_json_mapping
+        uuid transporter_id FK
+        boolean is_active
+        timestamp last_validated_at
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    %% Serviceability Lanes
+    SERVICEABILITY_LANES {
+        uuid id PK
+        string lane_code
+        uuid origin_location_id FK
+        uuid destination_location_id FK
+        float distance_km
+        int standard_tat_hours
+        enum freight_type
+        enum serviceability_mode
+        uuid vehicle_type_id FK
+        uuid transporter_id FK
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    LANE_ROUTE_CALCULATIONS {
+        uuid id PK
+        uuid lane_id FK
+        float total_distance_meters
+        int total_duration_seconds
+        string encoded_polyline
+        json waypoints
+        string route_summary
+        timestamp calculated_at
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    %% Trips
+    TRIPS {
+        uuid id PK
+        string trip_code
+        enum status
+        uuid customer_id FK
+        uuid driver_id FK
+        uuid vehicle_id FK
+        uuid transporter_id FK
+        uuid origin_location_id FK
+        uuid destination_location_id FK
+        uuid lane_id FK
+        uuid tracking_asset_id FK
+        uuid sim_consent_id FK
+        enum tracking_type
+        timestamp planned_start_time
+        timestamp planned_end_time
+        timestamp planned_eta
+        timestamp actual_start_time
+        timestamp actual_end_time
+        timestamp current_eta
+        float total_distance_km
+        timestamp last_ping_at
+        boolean is_trackable
+        int active_alert_count
+        string consignee_name
+        string notes
+        uuid closed_by FK
+        timestamp closed_at
+        string closure_notes
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    TRIP_WAYPOINTS {
+        uuid id PK
+        uuid trip_id FK
+        uuid location_id FK
+        string waypoint_name
+        string waypoint_type
+        int sequence_order
+        float latitude
+        float longitude
+        string status
+        timestamp planned_arrival_time
+        timestamp planned_departure_time
+        timestamp actual_arrival_time
+        timestamp actual_departure_time
+        int delay_minutes
+        string notes
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    TRIP_ALERTS {
+        uuid id PK
+        uuid trip_id FK
+        enum alert_type
+        string title
+        string description
+        string severity
+        enum status
+        float threshold_value
+        float actual_value
+        float location_latitude
+        float location_longitude
+        json metadata
+        timestamp triggered_at
+        uuid acknowledged_by FK
+        timestamp acknowledged_at
+        uuid resolved_by FK
+        timestamp resolved_at
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    TRIP_AUDIT_LOGS {
+        uuid id PK
+        uuid trip_id FK
+        enum previous_status
+        enum new_status
+        string change_reason
+        uuid changed_by FK
+        json metadata
+        timestamp created_at
+    }
+    
+    %% Shipments
+    SHIPMENTS {
+        uuid id PK
+        string shipment_code
+        enum status
+        string sub_status
+        uuid customer_id FK
+        uuid trip_id FK
+        uuid material_id FK
+        uuid pickup_location_id FK
+        uuid drop_location_id FK
+        string order_id
+        string waybill_number
+        string lr_number
+        string consignee_code
+        string shipment_type
+        int quantity
+        float weight_kg
+        float volume_cbm
+        float length_cm
+        float breadth_cm
+        float height_cm
+        timestamp planned_pickup_time
+        timestamp planned_delivery_time
+        boolean is_delayed
+        float delay_percentage
+        int exception_count
+        boolean has_open_exception
+        boolean pod_collected
+        string pod_file_path
+        string pod_file_name
+        string notes
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    TRIP_SHIPMENT_MAP {
+        uuid id PK
+        uuid trip_id FK
+        uuid shipment_id FK
+        int sequence_order
+        uuid mapped_by FK
+        timestamp mapped_at
+        string notes
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    SHIPMENT_EXCEPTIONS {
+        uuid id PK
+        uuid shipment_id FK
+        enum exception_type
+        string description
+        string severity
+        enum status
+        timestamp detected_at
+        uuid acknowledged_by FK
+        timestamp acknowledged_at
+        string escalated_to
+        timestamp escalated_at
+        uuid resolved_by FK
+        timestamp resolved_at
+        string resolution_notes
+        string resolution_path
+        json metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    SHIPMENT_STATUS_HISTORY {
+        uuid id PK
+        uuid shipment_id FK
+        string previous_status
+        string previous_sub_status
+        string new_status
+        string new_sub_status
+        uuid changed_by FK
+        timestamp changed_at
+        string change_source
+        string notes
+        json metadata
+        timestamp created_at
+    }
+    
+    %% Tracking & Location
+    LOCATION_HISTORY {
+        uuid id PK
+        uuid trip_id FK
+        uuid vehicle_id FK
+        uuid driver_id FK
+        uuid tracking_asset_id FK
+        float latitude
+        float longitude
+        float accuracy_meters
+        float altitude_meters
+        float speed_kmph
+        float heading
+        enum source
+        timestamp event_time
+        json raw_response
+        timestamp created_at
+    }
+    
+    TRACKING_LOGS {
+        uuid id PK
+        uuid trip_id FK
+        uuid tracking_asset_id FK
+        string source
+        int last_sequence_number
+        json location_history
+        json raw_responses
+        timestamp last_updated_at
+        timestamp created_at
+    }
+    
+    DRIVER_CONSENTS {
+        uuid id PK
+        uuid driver_id FK
+        uuid trip_id FK
+        string msisdn
+        string entity_id
+        enum consent_status
+        timestamp consent_requested_at
+        timestamp consent_received_at
+        timestamp consent_expires_at
+        json telenity_response
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    %% User Management
+    PROFILES {
+        uuid id PK
+        uuid user_id FK
+        string first_name
+        string last_name
+        string company
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    ROLES {
+        uuid id PK
+        string name
+        string description
+        boolean is_active
+        boolean is_system
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    ROLE_PERMISSIONS {
+        uuid id PK
+        uuid role_id FK
+        enum resource
+        enum action
+        timestamp created_at
+    }
+    
+    USER_ROLES {
+        uuid id PK
+        uuid user_id FK
+        enum role
+        uuid custom_role_id FK
+        uuid customer_id FK
+        timestamp created_at
+    }
+    
+    %% Settings & Config
+    TRACKING_SETTINGS {
+        uuid id PK
+        string setting_key
+        string setting_value
+        string description
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    INTEGRATION_TOKENS {
+        uuid id PK
+        string token_type
+        string token_value
+        timestamp expires_at
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    %% Relationships
+    CUSTOMERS ||--o{ LOCATIONS : "has"
+    CUSTOMERS ||--o{ TRIPS : "owns"
+    CUSTOMERS ||--o{ SHIPMENTS : "owns"
+    CUSTOMERS ||--o{ USER_ROLES : "linked_to"
+    
+    TRANSPORTERS ||--o{ DRIVERS : "employs"
+    TRANSPORTERS ||--o{ VEHICLES : "owns"
+    TRANSPORTERS ||--o{ TRACKING_ASSETS : "owns"
+    TRANSPORTERS ||--o{ SERVICEABILITY_LANES : "services"
+    TRANSPORTERS ||--o{ TRIPS : "transports"
+    
+    DRIVERS ||--o{ TRIPS : "drives"
+    DRIVERS ||--o{ DRIVER_CONSENTS : "gives"
+    DRIVERS ||--o{ LOCATION_HISTORY : "generates"
+    
+    VEHICLES ||--o{ TRIPS : "assigned_to"
+    VEHICLES ||--o| TRACKING_ASSETS : "equipped_with"
+    VEHICLES }o--|| VEHICLE_TYPES : "is_type"
+    
+    LOCATIONS ||--o{ TRIPS : "origin"
+    LOCATIONS ||--o{ TRIPS : "destination"
+    LOCATIONS ||--o{ SHIPMENTS : "pickup"
+    LOCATIONS ||--o{ SHIPMENTS : "drop"
+    LOCATIONS ||--o{ SERVICEABILITY_LANES : "origin"
+    LOCATIONS ||--o{ SERVICEABILITY_LANES : "destination"
+    LOCATIONS ||--o{ TRIP_WAYPOINTS : "waypoint"
+    
+    SERVICEABILITY_LANES ||--o| LANE_ROUTE_CALCULATIONS : "has_route"
+    SERVICEABILITY_LANES }o--|| VEHICLE_TYPES : "requires"
+    SERVICEABILITY_LANES ||--o{ TRIPS : "uses"
+    
+    TRIPS ||--o{ TRIP_WAYPOINTS : "has"
+    TRIPS ||--o{ TRIP_ALERTS : "generates"
+    TRIPS ||--o{ TRIP_AUDIT_LOGS : "logs"
+    TRIPS ||--o{ TRIP_SHIPMENT_MAP : "contains"
+    TRIPS ||--o{ LOCATION_HISTORY : "tracks"
+    TRIPS ||--o| TRACKING_LOGS : "has_log"
+    TRIPS ||--o| DRIVER_CONSENTS : "requires"
+    TRIPS }o--|| TRACKING_ASSETS : "tracked_by"
+    
+    SHIPMENTS ||--o{ TRIP_SHIPMENT_MAP : "mapped_in"
+    SHIPMENTS ||--o{ SHIPMENT_EXCEPTIONS : "has"
+    SHIPMENTS ||--o{ SHIPMENT_STATUS_HISTORY : "logs"
+    SHIPMENTS }o--|| MATERIALS : "contains"
+    
+    TRACKING_ASSETS ||--o{ LOCATION_HISTORY : "provides"
+    TRACKING_ASSETS ||--o{ TRACKING_LOGS : "logs"
+    
+    ROLES ||--o{ ROLE_PERMISSIONS : "has"
+    ROLES ||--o{ USER_ROLES : "assigned_via"
+    
+    PROFILES ||--o{ USER_ROLES : "has"
+    PROFILES ||--o{ TRIP_ALERTS : "acknowledges"
+    PROFILES ||--o{ TRIP_ALERTS : "resolves"
+    PROFILES ||--o{ TRIP_AUDIT_LOGS : "changes"
+    PROFILES ||--o{ SHIPMENT_EXCEPTIONS : "acknowledges"
+    PROFILES ||--o{ SHIPMENT_EXCEPTIONS : "resolves"

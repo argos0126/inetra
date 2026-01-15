@@ -1,0 +1,261 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#14B8A6', 'primaryTextColor': '#fff', 'lineColor': '#2DD4BF'}}}%%
+
+flowchart TB
+    subgraph UserInput["User Input Layer"]
+        direction LR
+        UI_TRIP["Create Trip"]
+        UI_SHIP["Create Shipment"]
+        UI_MASTER["Master Data Entry"]
+        UI_SETTINGS["Configure Settings"]
+    end
+    
+    subgraph Validation["Validation Layer"]
+        direction LR
+        V_FORM["Form Validation<br/>(Zod Schema)"]
+        V_BUSINESS["Business Rules<br/>(Trip prerequisites)"]
+        V_PERMISSION["Permission Check<br/>(RLS + RBAC)"]
+    end
+    
+    subgraph DataCreation["Data Creation"]
+        direction TB
+        
+        subgraph MasterData["Master Data"]
+            M_CUST["Customers"]
+            M_DRV["Drivers"]
+            M_VEH["Vehicles"]
+            M_LOC["Locations"]
+            M_TRANS["Transporters"]
+            M_LANE["Lanes"]
+        end
+        
+        subgraph OperationalData["Operational Data"]
+            O_TRIP["Trips"]
+            O_SHIP["Shipments"]
+            O_MAP["Trip-Shipment Map"]
+            O_WP["Waypoints"]
+        end
+    end
+    
+    subgraph TrackingLayer["Real-Time Tracking"]
+        direction TB
+        
+        subgraph Sources["Data Sources"]
+            S_GPS["GPS Device<br/>(WheelsEye)"]
+            S_SIM["Mobile Network<br/>(Telenity)"]
+            S_MANUAL["Manual Input"]
+        end
+        
+        subgraph Processing["Edge Processing"]
+            P_FETCH["Fetch Location"]
+            P_VALIDATE["Validate Data"]
+            P_TRANSFORM["Transform & Store"]
+            P_ANALYZE["Analyze for Alerts"]
+        end
+        
+        subgraph Storage["Location Storage"]
+            ST_HISTORY["location_history"]
+            ST_LOGS["tracking_logs"]
+        end
+    end
+    
+    subgraph AlertLayer["Alert Processing"]
+        direction TB
+        
+        subgraph Detection["Detection Rules"]
+            D_ROUTE["Route Deviation"]
+            D_SPEED["Speed Violation"]
+            D_GEO["Geofence Events"]
+            D_STOP["Long Stoppage"]
+            D_DELAY["ETA Delay"]
+            D_TRACK["No Tracking"]
+        end
+        
+        subgraph AlertActions["Alert Actions"]
+            A_CREATE["Create Alert"]
+            A_NOTIFY["Send Notification"]
+            A_UPDATE["Update Trip Stats"]
+        end
+        
+        subgraph AlertStorage["Alert Storage"]
+            AS_ALERTS["trip_alerts"]
+        end
+    end
+    
+    subgraph StatusUpdates["Status Management"]
+        direction TB
+        
+        subgraph TripStatus["Trip Status Flow"]
+            TS_CREATE["Created"]
+            TS_ONGOING["Ongoing"]
+            TS_COMPLETE["Completed"]
+            TS_CLOSED["Closed"]
+        end
+        
+        subgraph ShipmentStatus["Shipment Status Flow"]
+            SS_CREATE["Created"]
+            SS_CONFIRM["Confirmed"]
+            SS_MAP["Mapped"]
+            SS_TRANSIT["In Transit"]
+            SS_DELIVER["Delivered"]
+            SS_SUCCESS["Success"]
+        end
+        
+        subgraph AuditTrail["Audit Trail"]
+            AT_TRIP["trip_audit_logs"]
+            AT_SHIP["shipment_status_history"]
+        end
+    end
+    
+    subgraph ExceptionHandling["Exception Handling"]
+        direction TB
+        EH_DETECT["Detect Exception"]
+        EH_CREATE["Create Exception"]
+        EH_NOTIFY["Notify Stakeholders"]
+        EH_RESOLVE["Resolution Workflow"]
+        EH_STORE["shipment_exceptions"]
+    end
+    
+    subgraph Reporting["Reporting & Analytics"]
+        direction LR
+        R_DASH["Dashboard Widgets"]
+        R_STATS["Statistics"]
+        R_TRENDS["Trend Analysis"]
+        R_EXPORT["Data Export"]
+    end
+    
+    subgraph RealTimeUpdates["Real-Time UI Updates"]
+        RT_SUB["Supabase Realtime"]
+        RT_QUERY["TanStack Query"]
+        RT_UI["UI Components"]
+    end
+    
+    %% Flow Connections
+    
+    %% User Input to Validation
+    UI_TRIP --> V_FORM
+    UI_SHIP --> V_FORM
+    UI_MASTER --> V_FORM
+    UI_SETTINGS --> V_FORM
+    
+    V_FORM --> V_BUSINESS
+    V_BUSINESS --> V_PERMISSION
+    
+    %% Validation to Data Creation
+    V_PERMISSION --> M_CUST
+    V_PERMISSION --> M_DRV
+    V_PERMISSION --> M_VEH
+    V_PERMISSION --> M_LOC
+    V_PERMISSION --> M_TRANS
+    V_PERMISSION --> M_LANE
+    V_PERMISSION --> O_TRIP
+    V_PERMISSION --> O_SHIP
+    
+    %% Master data relationships
+    M_CUST --> O_TRIP
+    M_DRV --> O_TRIP
+    M_VEH --> O_TRIP
+    M_LOC --> O_TRIP
+    M_TRANS --> O_TRIP
+    M_LANE --> O_TRIP
+    
+    O_TRIP --> O_MAP
+    O_SHIP --> O_MAP
+    O_TRIP --> O_WP
+    
+    %% Tracking flow
+    O_TRIP --> Sources
+    S_GPS --> P_FETCH
+    S_SIM --> P_FETCH
+    S_MANUAL --> P_FETCH
+    
+    P_FETCH --> P_VALIDATE
+    P_VALIDATE --> P_TRANSFORM
+    P_TRANSFORM --> ST_HISTORY
+    P_TRANSFORM --> ST_LOGS
+    P_TRANSFORM --> P_ANALYZE
+    
+    %% Alert flow
+    P_ANALYZE --> D_ROUTE
+    P_ANALYZE --> D_SPEED
+    P_ANALYZE --> D_GEO
+    P_ANALYZE --> D_STOP
+    P_ANALYZE --> D_DELAY
+    P_ANALYZE --> D_TRACK
+    
+    D_ROUTE --> A_CREATE
+    D_SPEED --> A_CREATE
+    D_GEO --> A_CREATE
+    D_STOP --> A_CREATE
+    D_DELAY --> A_CREATE
+    D_TRACK --> A_CREATE
+    
+    A_CREATE --> AS_ALERTS
+    A_CREATE --> A_NOTIFY
+    A_CREATE --> A_UPDATE
+    A_UPDATE --> O_TRIP
+    
+    %% Status updates
+    O_TRIP --> TripStatus
+    O_SHIP --> ShipmentStatus
+    
+    TS_CREATE --> TS_ONGOING
+    TS_ONGOING --> TS_COMPLETE
+    TS_COMPLETE --> TS_CLOSED
+    
+    SS_CREATE --> SS_CONFIRM
+    SS_CONFIRM --> SS_MAP
+    SS_MAP --> SS_TRANSIT
+    SS_TRANSIT --> SS_DELIVER
+    SS_DELIVER --> SS_SUCCESS
+    
+    TripStatus --> AT_TRIP
+    ShipmentStatus --> AT_SHIP
+    
+    %% Exception handling
+    SS_TRANSIT --> EH_DETECT
+    EH_DETECT --> EH_CREATE
+    EH_CREATE --> EH_STORE
+    EH_CREATE --> EH_NOTIFY
+    EH_NOTIFY --> EH_RESOLVE
+    EH_RESOLVE --> EH_STORE
+    
+    %% Reporting
+    O_TRIP --> R_DASH
+    O_SHIP --> R_DASH
+    AS_ALERTS --> R_DASH
+    EH_STORE --> R_DASH
+    ST_HISTORY --> R_DASH
+    
+    R_DASH --> R_STATS
+    R_DASH --> R_TRENDS
+    R_DASH --> R_EXPORT
+    
+    %% Real-time updates
+    ST_HISTORY --> RT_SUB
+    AS_ALERTS --> RT_SUB
+    O_TRIP --> RT_SUB
+    O_SHIP --> RT_SUB
+    
+    RT_SUB --> RT_QUERY
+    RT_QUERY --> RT_UI
+    
+    %% Styling
+    classDef input fill:#4F46E5,stroke:#4338CA,color:#fff
+    classDef validation fill:#7C3AED,stroke:#6D28D9,color:#fff
+    classDef data fill:#059669,stroke:#047857,color:#fff
+    classDef tracking fill:#DC2626,stroke:#B91C1C,color:#fff
+    classDef alert fill:#F59E0B,stroke:#D97706,color:#000
+    classDef status fill:#0EA5E9,stroke:#0284C7,color:#fff
+    classDef exception fill:#EC4899,stroke:#DB2777,color:#fff
+    classDef reporting fill:#14B8A6,stroke:#0D9488,color:#fff
+    classDef realtime fill:#6366F1,stroke:#4F46E5,color:#fff
+    
+    class UI_TRIP,UI_SHIP,UI_MASTER,UI_SETTINGS input
+    class V_FORM,V_BUSINESS,V_PERMISSION validation
+    class M_CUST,M_DRV,M_VEH,M_LOC,M_TRANS,M_LANE,O_TRIP,O_SHIP,O_MAP,O_WP data
+    class S_GPS,S_SIM,S_MANUAL,P_FETCH,P_VALIDATE,P_TRANSFORM,P_ANALYZE,ST_HISTORY,ST_LOGS tracking
+    class D_ROUTE,D_SPEED,D_GEO,D_STOP,D_DELAY,D_TRACK,A_CREATE,A_NOTIFY,A_UPDATE,AS_ALERTS alert
+    class TS_CREATE,TS_ONGOING,TS_COMPLETE,TS_CLOSED,SS_CREATE,SS_CONFIRM,SS_MAP,SS_TRANSIT,SS_DELIVER,SS_SUCCESS,AT_TRIP,AT_SHIP status
+    class EH_DETECT,EH_CREATE,EH_NOTIFY,EH_RESOLVE,EH_STORE exception
+    class R_DASH,R_STATS,R_TRENDS,R_EXPORT reporting
+    class RT_SUB,RT_QUERY,RT_UI realtime

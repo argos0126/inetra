@@ -1,0 +1,82 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'lineColor': '#6366F1'}}}%%
+
+stateDiagram-v2
+    [*] --> Created: Create New Trip
+
+    state Created {
+        [*] --> Validating
+        Validating --> Validated: All fields valid
+        Validating --> Invalid: Validation failed
+        Invalid --> Validating: Correct errors
+        Validated --> Ready: Ready for dispatch
+    }
+
+    Created --> Ongoing: Start Trip
+    note right of Created
+        Prerequisites:
+        - Vehicle assigned
+        - Driver assigned
+        - Tracking enabled
+        - Shipments mapped (optional)
+    end note
+
+    state Ongoing {
+        [*] --> InTransit
+        InTransit --> AtWaypoint: Arrive at waypoint
+        AtWaypoint --> InTransit: Depart waypoint
+        InTransit --> Delayed: ETA exceeded
+        Delayed --> InTransit: Back on schedule
+        
+        state Monitoring {
+            RouteCheck: Route Monitoring
+            SpeedCheck: Speed Monitoring
+            GeofenceCheck: Geofence Monitoring
+            StoppageCheck: Stoppage Monitoring
+        }
+    }
+
+    Ongoing --> Completed: Reach Final Destination
+    Ongoing --> OnHold: Put on Hold
+    Ongoing --> Cancelled: Cancel Trip
+    
+    note left of Ongoing
+        Active Monitoring:
+        - Real-time location
+        - Alert detection
+        - ETA updates
+        - Geofence events
+    end note
+
+    OnHold --> Ongoing: Resume Trip
+    OnHold --> Cancelled: Cancel Trip
+
+    state Completed {
+        [*] --> AwaitingPOD
+        AwaitingPOD --> PODCollected: POD uploaded
+        PODCollected --> ReadyToClose: Verification done
+    }
+
+    Completed --> Closed: Close Trip
+    note right of Completed
+        Closure Requirements:
+        - All shipments delivered
+        - POD collected
+        - Exceptions resolved
+        - Closure notes added
+    end note
+
+    Cancelled --> Closed: Close Trip
+
+    state Closed {
+        [*] --> Archived
+        Archived --> [*]
+    }
+
+    note right of Closed
+        Closed trips:
+        - Read-only
+        - Audit trail preserved
+        - Available for reporting
+    end note
+
+    Closed --> [*]
